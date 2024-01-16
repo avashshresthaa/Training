@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_application_3/models/login_model.dart';
+import 'package:flutter_application_3/network/dataprovider.dart';
 import 'package:flutter_application_3/pages/bottomnavigationpage.dart';
 
 void main() {
@@ -24,6 +26,36 @@ class _MyAppState extends State<MyApp> {
 
   bool isCheck = true;
 
+  void showLoginDialog(BuildContext context) {
+    showDialog(
+      context: context,
+      barrierDismissible: false, // user must tap button!
+      builder: (BuildContext context) {
+        return AlertDialog(
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              CircularProgressIndicator(),
+              SizedBox(
+                height: 8,
+              ),
+              Text("Loading"),
+            ],
+          ),
+        );
+      },
+    );
+  }
+
+//To show any message
+  void showSnackBar(BuildContext context, String message) {
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text(message),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -47,12 +79,6 @@ class _MyAppState extends State<MyApp> {
               height: 16,
             ),
             CustomTextField(
-              usernameController: emailController,
-              hintText: "Email",
-              icon: Icons.email,
-            ),
-
-            CustomTextField(
               usernameController: usernameController,
               hintText: "Username",
               icon: Icons.person,
@@ -62,45 +88,40 @@ class _MyAppState extends State<MyApp> {
               hintText: "Password",
               icon: Icons.lock_clock,
             ),
-            // TextField(
-            //   obscureText: isCheck,
-            //   controller: password,
-            //   decoration: InputDecoration(
-            //     hintText: "Password",
-            //     prefixIcon: Icon(Icons.lock),
-            //     suffixIcon: GestureDetector(
-            //       onTap: () {
-            //         setState(() {
-            //           isCheck = !isCheck;
-            //           print(isCheck);
-            //         });
-            //       },
-            //       child: Icon(Icons.remove_red_eye),
-            //     ),
-            //     enabledBorder: OutlineInputBorder(
-            //       borderRadius: BorderRadius.circular(18),
-            //       borderSide: BorderSide(
-            //         color: Colors.green,
-            //       ),
-            //     ),
-            //     focusedBorder: OutlineInputBorder(
-            //       borderRadius: BorderRadius.circular(18),
-            //       borderSide: BorderSide(
-            //         color: Colors.green,
-            //       ),
-            //     ),
-            //   ),
-            // ),
             SizedBox(
               height: 16,
             ),
             ElevatedButton(
-              onPressed: () {
-                Navigator.push(context, MaterialPageRoute(
-                  builder: (context) {
-                    return BottomNavigationPage();
-                  },
-                ));
+              onPressed: () async {
+                //Loading Widget
+                showLoginDialog(context);
+                DataProvider dataProvider = DataProvider();
+
+                try {
+                  LoginModel getResult = await dataProvider.getLogin(
+                    username: usernameController.text,
+                    password: passwordController.text,
+                  );
+                  if (getResult.result!.verified == true) {
+                    //To remove loading widget.
+                    Navigator.pop(context);
+
+                    Navigator.push(context, MaterialPageRoute(
+                      builder: (context) {
+                        return BottomNavigationPage();
+                      },
+                    ));
+                  } else {
+                    Navigator.pop(context);
+                    print("Wrong Pass");
+                    showSnackBar(context, 'Wrong password. Please try again.');
+                  }
+                } catch (e) {
+                  //Navigator pop used to remove the loading dialog box and snack used to dislpay message.
+                  Navigator.pop(context);
+                  print("Wrong Pass");
+                  showSnackBar(context, 'Wrong password. Please try again.');
+                }
               },
               child: Text(
                 "GO TO HOME SCREN",
